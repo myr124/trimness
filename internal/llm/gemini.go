@@ -21,10 +21,7 @@ func (gc GeminiClient) Generate(
 	req Request,
 ) (Response, error) {
 
-
 	// Send our request through either library or https request
 
-
-
-	return (Response, error)
+	return r, err
 }
