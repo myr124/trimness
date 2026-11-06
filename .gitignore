@@ -1,0 +1,29 @@
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Go build output
+/bin/
+/trimness
+*.exe
+*.test
+*.out
+
+# Go tooling
+vendor/
+go.work
+go.work.sum
+coverage.*
+
+# Editors
+.idea/
+.vscode/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
