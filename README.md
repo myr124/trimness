@@ -2,9 +2,9 @@
 
 # trimness ⚡
 
-**A lightweight coding agent harness built in Go.**
+**An experimental agent harness and infrastructure research project, built in Go.**
 
-*Less context. Fewer tokens. Same results.*
+*A foundation for investigating how agents use context, tools, and skills.*
 
 ![Go](https://img.shields.io/badge/Go-00ADD8?style=flat-square&logo=go&logoColor=white) ![Status](https://img.shields.io/badge/status-WIP-555555?style=flat-square)
 
@@ -12,34 +12,39 @@
 
 ### About
 
-Trimness is an experimental coding agent harness exploring how to reduce token usage and execution costs without sacrificing correctness.
+Trimness is an experimental agent harness built from scratch in **Go**. It's not a claim that these problems are solved. It's a foundation for investigating them in a controlled, measurable way.
 
-Built from scratch in **Go**, with two main goals:
+The overarching theme is **agent infrastructure engineering**: the systems around the model that determine how well an agent performs, what it costs, and how it behaves. Token optimization is one research area among several.
 
-- **Smarter inputs** — Filter noisy tool outputs and unnecessary context.
-- **Leaner outputs** — Make targeted code edits instead of rewriting entire files.
+### Research areas
+
+| Area | Focus | Questions |
+| --- | --- | --- |
+| **Context efficiency** | Token usage, compression, retrieval | How do we filter noisy tool output and unnecessary context? Can targeted edits replace whole-file rewrites? |
+| **Agent-native tools** | MCP discovery, selection, execution | MCP is already built to support agents. Can discovery, selection, and use be made more efficient or adaptive? |
+| **Skills architecture** | Loading, composition, activation | Skills already exist. When and how should they be loaded, composed, and activated to avoid wasted context? |
+| **Execution systems** | Agent loops, state, orchestration | How should loops, state, and orchestration be structured so behavior is observable and reproducible? |
 
 ### How it works
 
 **User → Agent → LLM → Tools → Results → Agent**
 
-The agent can read files, search code, make edits, and run tests. Future optimizations will focus on reducing the tokens exchanged throughout this process.
+The initial harness is a coding agent that can read files, search code, make edits, and run tests. It serves as the testbed: instrumented so each research area can be explored by changing one part of the loop and measuring the effect.
 
 ### Roadmap
 
-- [ ] **01 / Harness** — Build the core coding agent.
+- [ ] **01 / Harness** — Build the core agent loop and coding tools.
 - [ ] **02 / Observe** — Track tokens, cost, and execution traces.
-- [ ] **03 / Input** — Optimize tool observations.
-- [ ] **04 / Output** — Optimize code editing strategies.
-- [ ] **05 / Evaluate** — Benchmark and publish findings.
+- [ ] **03 / Context** — Experiment with tool observations and edit strategies.
+- [ ] **04 / Tools & skills** — Explore MCP and skill discovery, loading, and selection.
+- [ ] **05 / Evaluate** — Benchmark and publish findings, including negative results.
 
 ### Philosophy
 
 > Less isn't always better. Measure what matters.
 
-Trimness prioritizes **cost per successful task**, not just fewer tokens.
+Trimness prioritizes **cost per successful task**, not just fewer tokens. These are open questions under investigation, and feedback from people working on similar problems is welcome.
 
 ---
 
-**Built with Go. Designed for efficiency.**
-
+**Built with Go. Designed for experimentation.**
