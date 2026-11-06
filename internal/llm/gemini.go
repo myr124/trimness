@@ -1,6 +1,12 @@
 package llm
 
-import "context"
+import (
+	"context"
+	"fmt"
+	"trimness/internal/core"
+
+	"google.golang.org/genai"
+)
 
 /*
 Components of our gemini provider
@@ -11,8 +17,11 @@ Components of our gemini provider
 
 */
 
+// EXPLORE WAYS TO CONSOLIDATE (I think some of this logic is repetitive, for example we have client types and interfaces but so does gemini and probably openai)
+
 type GeminiClient struct {
-	api_key string
+	API_key string
+	Model   string
 	Request Request
 }
 
@@ -23,5 +32,23 @@ func (gc GeminiClient) Generate(
 
 	// Send our request through either library or https request
 
-	return r, err
+	client, err := genai.NewClient(ctx, &genai.ClientConfig{
+		APIKey:  gc.API_key,
+		Backend: genai.BackendGeminiAPI,
+	})
+
+	if err != nil {
+		fmt.Println(err.Error())
+		return Response{}, err
+	}
+
+	parts := []*genai.Part{
+		{Text: gc.Request.Messages[0].Content},
+	}
+
+	r, err := client.Models.GenerateContent(ctx, gc.Model, []*genai.Content{{Parts: parts}}, nil)
+
+	response := Response{Message: core.Message{Role: "assistant", Content: r.Text()}}
+
+	return response, err
 }

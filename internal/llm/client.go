@@ -27,6 +27,3 @@ type Client interface {
 		req Request,
 	) (Response, error)
 }
-
-type TrimnessClient struct {
-}

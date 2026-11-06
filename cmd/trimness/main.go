@@ -1,9 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"os"
 	"trimness/internal/agent"
+	"trimness/internal/llm"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -12,11 +17,15 @@ func main() {
 		return
 	}
 
-	a := agent.Agent{Name: "Trimness"}
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("No .env file found, relying on system environment variables")
+	}
 
-	a.Run(os.Args[1])
+	ctx := context.Background()
 
-	// add llm client and call to gemini api
+	a := agent.Agent{Name: "Trimness", Client: llm.GeminiClient{API_key: os.Getenv("GEMINI_API_KEY")}}
 
-	fmt.Println(a.History)
+	fmt.Println(a.Run(ctx, os.Args[1]))
+
 }
