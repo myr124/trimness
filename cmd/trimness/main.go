@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"trimness/internal/agent"
 )
 
 func main() {
@@ -11,7 +12,11 @@ func main() {
 		return
 	}
 
+	a := agent.Agent{Name: "Trimness"}
+
+	a.Run(os.Args[1])
+
 	// add llm client and call to gemini api
 
-	fmt.Println(os.Args[1])
+	fmt.Println(a.History)
 }
