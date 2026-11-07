@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 	"trimness/internal/agent"
 	"trimness/internal/llm"
 
@@ -22,7 +23,10 @@ func main() {
 		log.Println("No .env file found, relying on system environment variables")
 	}
 
-	ctx := context.Background()
+	// 1. Create a base context with a timeout duration
+	// Always call the cancel function (via defer) to avoid resource leaks
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
 
 	a := agent.Agent{Name: "Trimness", Client: llm.GeminiClient{API_key: os.Getenv("GEMINI_API_KEY"), Model: "gemini-3.5-flash"}}
 
