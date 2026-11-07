@@ -2,7 +2,6 @@ package llm
 
 import (
 	"context"
-	"fmt"
 	"trimness/internal/core"
 
 	"google.golang.org/genai"
@@ -22,7 +21,6 @@ Components of our gemini provider
 type GeminiClient struct {
 	API_key string
 	Model   string
-	Request Request
 }
 
 func (gc GeminiClient) Generate(
@@ -37,16 +35,15 @@ func (gc GeminiClient) Generate(
 		Backend: genai.BackendGeminiAPI,
 	})
 
-	if err != nil {
-		fmt.Println(err.Error())
-		return Response{}, err
-	}
-
 	parts := []*genai.Part{
-		{Text: gc.Request.Messages[0].Content},
+		{Text: req.Messages[0].Content},
 	}
 
 	r, err := client.Models.GenerateContent(ctx, gc.Model, []*genai.Content{{Parts: parts}}, nil)
+
+	if err != nil {
+		return Response{}, err
+	}
 
 	response := Response{Message: core.Message{Role: "assistant", Content: r.Text()}}
 

@@ -24,7 +24,7 @@ func main() {
 
 	ctx := context.Background()
 
-	a := agent.Agent{Name: "Trimness", Client: llm.GeminiClient{API_key: os.Getenv("GEMINI_API_KEY")}}
+	a := agent.Agent{Name: "Trimness", Client: llm.GeminiClient{API_key: os.Getenv("GEMINI_API_KEY"), Model: "gemini-3.5-flash"}}
 
 	fmt.Println(a.Run(ctx, os.Args[1]))
 

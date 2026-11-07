@@ -18,9 +18,8 @@ type Agent struct {
 }
 
 func (a *Agent) Run(ctx context.Context, prompt string) (string, error) {
-	// call llm client?
 
-	a.AddMessage(core.Message{Content: prompt})
+	a.AddMessage(core.Message{Role: "user", Content: prompt})
 	req := llm.Request{Messages: a.History}
 	response, err := a.Client.Generate(ctx, req)
 
