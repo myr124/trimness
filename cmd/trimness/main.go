@@ -26,7 +26,7 @@ func main() {
 	// 1. Create a base context with a timeout duration
 	// Always call the cancel function (via defer) to avoid resource leaks
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
+	defer cancel() // do more research on this
 
 	a := agent.Agent{Name: "Trimness", Client: llm.GeminiClient{API_key: os.Getenv("GEMINI_API_KEY"), Model: "gemini-3.5-flash"}}
 
