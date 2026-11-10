@@ -1,35 +1,72 @@
 package main
 
 import (
-	"context"
+	"flag"
 	"fmt"
 	"log"
 	"os"
-	"time"
 	"trimness/internal/agent"
 	"trimness/internal/llm"
+	"trimness/internal/session"
+	"trimness/internal/tui"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/joho/godotenv"
 )
 
 func main() {
-	if len(os.Args) < 2 || len(os.Args) > 2 {
-		fmt.Println("invalid arguments")
-		return
+	sessionID := flag.String("session", "", "resume the session with this ID (default: most recent)")
+	flag.Parse()
+
+	// A missing .env is fine; the key may come from the real environment.
+	_ = godotenv.Load()
+
+	key := os.Getenv("GEMINI_API_KEY")
+	if key == "" {
+		log.Fatal("GEMINI_API_KEY is not set (export it or put it in .env)")
 	}
 
-	err := godotenv.Load()
+	dir, err := session.DefaultDir()
 	if err != nil {
-		log.Println("No .env file found, relying on system environment variables")
+		log.Fatalf("cannot resolve session directory: %v", err)
+	}
+	store := session.FileStore{Dir: dir}
+
+	sess, err := initialSession(store, *sessionID)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	// 1. Create a base context with a timeout duration
-	// Always call the cancel function (via defer) to avoid resource leaks
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel() // do more research on this
+	a := &agent.Agent{
+		Name:   "Trimness",
+		Client: llm.GeminiClient{API_key: key, Model: "gemini-3.5-flash"},
+	}
 
-	a := agent.Agent{Name: "Trimness", Client: llm.GeminiClient{API_key: os.Getenv("GEMINI_API_KEY"), Model: "gemini-3.5-flash"}}
+	p := tea.NewProgram(tui.New(a, store, sess), tea.WithAltScreen(), tea.WithMouseCellMotion())
+	if _, err := p.Run(); err != nil {
+		fmt.Fprintln(os.Stderr, "error:", err)
+		os.Exit(1)
+	}
+}
 
-	fmt.Println(a.Run(ctx, os.Args[1]))
-
+// initialSession resolves which session to open: an explicit ID, else the most
+// recently updated one, else a brand-new session.
+func initialSession(store session.Store, id string) (session.Session, error) {
+	if id != "" {
+		s, err := store.Load(id)
+		if err != nil {
+			return session.Session{}, fmt.Errorf("cannot open session %q: %w", id, err)
+		}
+		return s, nil
+	}
+	sums, err := store.List()
+	if err != nil {
+		return session.Session{}, fmt.Errorf("cannot list sessions: %w", err)
+	}
+	if len(sums) > 0 {
+		if s, err := store.Load(sums[0].ID); err == nil {
+			return s, nil
+		}
+	}
+	return session.New(), nil
 }

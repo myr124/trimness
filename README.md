@@ -31,6 +31,24 @@ The overarching theme is **agent infrastructure engineering**: the systems aroun
 
 The initial harness is a coding agent that can read files, search code, make edits, and run tests. It serves as the testbed: instrumented so each research area can be explored by changing one part of the loop and measuring the effect.
 
+### Usage
+
+```sh
+export GEMINI_API_KEY=...   # or put it in .env
+go run ./cmd/trimness            # resume the most recent session (or start a new one)
+go run ./cmd/trimness --session <id>
+```
+
+| Key | Action |
+| --- | --- |
+| `enter` / `alt+enter` | send / newline |
+| `esc` | cancel the in-flight reply |
+| `ctrl+n` / `ctrl+o` | new session / session picker |
+| `pgup` `pgdn` / mouse wheel | scroll history |
+| `ctrl+c` / `ctrl+d` | cancel, then quit / quit |
+
+Sessions are JSON files in `$XDG_DATA_HOME/trimness/sessions` (default `~/.local/share/trimness/sessions`).
+
 ### Roadmap
 
 - [ ] **01 / Harness** — Build the core agent loop and coding tools.

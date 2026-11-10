@@ -27,3 +27,17 @@ type Client interface {
 		req Request,
 	) (Response, error)
 }
+
+// Chunk is one incremental piece of a streamed response.
+type Chunk struct {
+	Text string // text delta
+	Err  error  // terminal error; the stream ends after a chunk with Err set
+}
+
+// Streamer is an optional capability a Client may implement. When it does, the
+// agent forwards chunks as incremental events; otherwise it falls back to
+// Generate. The implementation must close the channel when the stream ends and
+// stop promptly when ctx is cancelled.
+type Streamer interface {
+	Stream(ctx context.Context, req Request) (<-chan Chunk, error)
+}
