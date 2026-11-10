@@ -27,6 +27,8 @@ func (a *Agent) Run(ctx context.Context, prompt string) (string, error) {
 		return "", err
 	}
 
+	a.AddMessage(response.Message)
+
 	return response.Message.Content, nil
 
 }
