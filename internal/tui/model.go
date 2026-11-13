@@ -76,6 +76,8 @@ func New(a *agent.Agent, store session.Store, sess session.Session) Model {
 	return m
 }
 
+// loadSession makes s the active conversation: the agent's history (what the
+// model sees) and the entries (what the user sees) are both rebuilt from it.
 func (m *Model) loadSession(s session.Session) {
 	m.sess = s
 	m.agent.SetHistory(s.Messages)
@@ -109,9 +111,11 @@ func (m *Model) refresh(force bool) {
 }
 
 // waitForEvent blocks on the agent channel off the UI goroutine.
+// A tea.Cmd runs in its own goroutine, so blocking on the channel here does not
+// freeze the UI. It returns ONE event; Update asks for the next one afterwards.
 func waitForEvent(ch <-chan agent.Event) tea.Cmd {
 	return func() tea.Msg {
-		ev, ok := <-ch
+		ev, ok := <-ch // ok == false means the agent closed the channel
 		if !ok {
 			return streamClosedMsg{ch: ch}
 		}
@@ -124,6 +128,8 @@ func (m *Model) persist(msgs []core.Message) tea.Cmd {
 	m.sess.Messages = msgs
 	m.sess.DeriveTitle()
 	m.sess.UpdatedAt = time.Now()
+	// Copy into locals: the returned func runs later on another goroutine and
+	// must not read m, which Update may have changed by then.
 	s := m.sess
 	store := m.store
 	return func() tea.Msg {

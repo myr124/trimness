@@ -46,21 +46,25 @@ func (fs FileStore) Save(s Session) error {
 	if err := os.MkdirAll(fs.Dir, 0o755); err != nil {
 		return err
 	}
-	data, err := json.MarshalIndent(s, "", "  ")
+	data, err := json.MarshalIndent(s, "", "  ") // indented so files are human-readable
 	if err != nil {
 		return err
 	}
+	// Write to a temp file in the SAME directory (rename is only atomic within
+	// one filesystem). The leading "." keeps List() from mistaking it for a session.
 	tmp, err := os.CreateTemp(fs.Dir, ".tmp-*")
 	if err != nil {
 		return err
 	}
 	tmpName := tmp.Name()
-	cleanup := func() { _ = os.Remove(tmpName) }
+	cleanup := func() { _ = os.Remove(tmpName) } // delete the temp file on any failure
 	if _, err := tmp.Write(data); err != nil {
 		tmp.Close()
 		cleanup()
 		return err
 	}
+	// Sync forces the bytes to disk, so a power cut can't leave an empty file
+	// that then gets renamed over the good one.
 	if err := tmp.Sync(); err != nil {
 		tmp.Close()
 		cleanup()
@@ -70,6 +74,7 @@ func (fs FileStore) Save(s Session) error {
 		cleanup()
 		return err
 	}
+	// The atomic step: readers see either the old complete file or the new one.
 	if err := os.Rename(tmpName, p); err != nil {
 		cleanup()
 		return err
