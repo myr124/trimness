@@ -7,6 +7,7 @@ var (
 	assistantLabel = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("213"))
 	toolStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("244")).PaddingLeft(2)
 	errorStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("196"))
+	approvalStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("214")).PaddingLeft(2)
 	statusStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
 	ruleStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("238"))
 )

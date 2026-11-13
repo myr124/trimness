@@ -17,8 +17,10 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// runTimeout bounds a single agent run (the whole prompt -> reply cycle).
-const runTimeout = 60 * time.Second
+// runTimeout bounds a single agent run (the whole prompt -> reply cycle). It is
+// generous because a run can now span several model calls and tool executions,
+// and may sit waiting for the user to answer an approval prompt.
+const runTimeout = 5 * time.Minute
 
 const inputHeight = 3
 
@@ -28,6 +30,12 @@ const (
 	modeChat mode = iota
 	modeSessions
 )
+
+// approval is a tool call waiting for the user's yes/no. The agent is blocked
+// until something is sent on reply.
+type approval struct {
+	reply chan<- bool
+}
 
 type Model struct {
 	agent *agent.Agent
@@ -42,7 +50,8 @@ type Model struct {
 	waitingFirst bool // spinner shown until first delta / message
 	cancelling   bool
 	cancel       context.CancelFunc
-	status       string // transient status-line message
+	pending      *approval // non-nil while the agent is waiting on a y/n; captures the keyboard
+	status       string    // transient status-line message
 
 	vp   viewport.Model
 	ta   textarea.Model

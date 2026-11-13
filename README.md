@@ -46,6 +46,11 @@ go run ./cmd/trimness --session <id>
 | `ctrl+n` / `ctrl+o` | new session / session picker |
 | `pgup` `pgdn` / mouse wheel | scroll history |
 | `ctrl+c` / `ctrl+d` | cancel, then quit / quit |
+| `y` / `n` | allow / refuse a pending file write (only while asked) |
+
+The agent has two tools, confined to the directory you start trimness in:
+`readfile` (read-only) and `writefile`. Every write pauses for your approval and
+shows what would be created or overwritten; refusing tells the model so it can adapt.
 
 Sessions are JSON files in `$XDG_DATA_HOME/trimness/sessions` (default `~/.local/share/trimness/sessions`).
 

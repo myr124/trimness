@@ -8,6 +8,7 @@ import (
 	"trimness/internal/agent"
 	"trimness/internal/llm"
 	"trimness/internal/session"
+	"trimness/internal/tools"
 	"trimness/internal/tui"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -37,9 +38,18 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// Tools are confined to the directory trimness is started in: os.Root
+	// refuses paths that escape it (.., absolute paths, symlinks out).
+	root, err := os.OpenRoot(".")
+	if err != nil {
+		log.Fatalf("cannot open project directory: %v", err)
+	}
+	defer root.Close()
+
 	a := &agent.Agent{
 		Name:   "Trimness",
 		Client: llm.GeminiClient{API_key: key, Model: "gemini-3.5-flash"},
+		Tools:  tools.NewRegistry(tools.ReadFile{Root: root}, tools.WriteFile{Root: root}),
 	}
 
 	p := tea.NewProgram(tui.New(a, store, sess), tea.WithAltScreen(), tea.WithMouseCellMotion())

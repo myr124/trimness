@@ -67,6 +67,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // updateChat handles keys on the main chat screen.
 func (m Model) updateChat(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	// While the agent waits on a yes/no, that question owns the keyboard.
+	if m.pending != nil {
+		return m.updateApproval(msg)
+	}
+
 	switch msg.String() {
 	case "ctrl+c":
 		// First press cancels a running reply; a second press (or pressing
@@ -122,6 +127,39 @@ func (m Model) updateChat(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	m.ta, cmd = m.ta.Update(msg)
 	return m, cmd
+}
+
+// updateApproval handles keys while a tool call waits for permission. Only an
+// explicit y or n answers it, so stray typing or a buffered Enter can't approve
+// a write by accident.
+func (m Model) updateApproval(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "y", "Y":
+		m.answerApproval(true)
+	case "n", "N", "esc":
+		m.answerApproval(false)
+	case "ctrl+c":
+		// Give up on the whole run; the agent notices the cancelled context.
+		m.pending = nil
+		m.cancelRun()
+	case "ctrl+d":
+		m.cancelRun()
+		return m, tea.Quit
+	case "pgup", "pgdown", "ctrl+u":
+		var cmd tea.Cmd
+		m.vp, cmd = m.vp.Update(msg)
+		return m, cmd
+	}
+	return m, nil
+}
+
+// answerApproval unblocks the agent with the user's decision.
+func (m *Model) answerApproval(allow bool) {
+	select {
+	case m.pending.reply <- allow: // buffered: never blocks
+	default:
+	}
+	m.pending = nil
 }
 
 // updateSessions handles keys while the session picker is open.
@@ -213,9 +251,16 @@ func (m Model) handleEvent(msg agentEventMsg) (tea.Model, tea.Cmd) {
 		m.waitingFirst = false
 		m.entries = append(m.entries, entry{kindToolCall, formatCall(ev.Call)})
 	case agent.ToolFinished:
-		m.entries = append(m.entries, entry{kindToolResult, ev.Result.Output})
+		m.entries = append(m.entries, entry{kindToolResult, resultText(ev.Result.Output, ev.Result.IsError)})
+	case agent.ApprovalRequested:
+		// Show what is about to happen and capture the keyboard until answered.
+		// The agent is blocked, so no further events arrive until we reply.
+		m.waitingFirst = false
+		m.entries = append(m.entries, entry{kindApproval, ev.Summary})
+		m.pending = &approval{reply: ev.Reply}
 	case agent.RunError:
 		m.waitingFirst = false
+		m.pending = nil
 		m.partial.Reset() // partial text is never kept
 		if errors.Is(ev.Err, context.Canceled) {
 			// A user-requested cancel isn't an error worth a red message.
@@ -240,6 +285,7 @@ func (m Model) finishRun() (tea.Model, tea.Cmd) {
 		m.cancel = nil
 	}
 	m.running, m.waitingFirst, m.cancelling = false, false, false
+	m.pending = nil
 	m.partial.Reset()
 	m.refresh(false)
 	save := m.persist(append([]core.Message(nil), m.agent.History...))

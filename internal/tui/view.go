@@ -17,6 +17,9 @@ func (m Model) View() string {
 }
 
 func (m Model) statusLine() string {
+	if m.pending != nil {
+		return approvalStyle.PaddingLeft(0).Render("⚠ allow this action?  [y] yes · [n] no · ctrl+c cancel the run")
+	}
 	var left string
 	switch {
 	case m.running && m.cancelling:

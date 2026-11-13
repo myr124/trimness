@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"trimness/internal/core"
@@ -15,6 +17,7 @@ const (
 	kindAssistant
 	kindToolCall
 	kindToolResult
+	kindApproval // a pending request to let the agent run a tool
 	kindError
 )
 
@@ -39,14 +42,34 @@ func entriesFromMessages(msgs []core.Message) []entry {
 				out = append(out, entry{kindToolCall, formatCall(c)})
 			}
 		case "tool":
-			out = append(out, entry{kindToolResult, m.Content})
+			out = append(out, entry{kindToolResult, resultText(m.Content, m.IsError)})
 		}
 	}
 	return out
 }
 
+// maxCallArgsLen caps how much of a call's JSON arguments is shown inline
+// (a writefile call carries its whole file content).
+const maxCallArgsLen = 120
+
 func formatCall(c core.ToolCall) string {
-	return fmt.Sprintf("⚙ %s(%s)", c.ToolName, strings.Join(c.Args, ", "))
+	args := string(c.Args)
+	var buf bytes.Buffer
+	if json.Compact(&buf, c.Args) == nil {
+		args = buf.String()
+	}
+	if r := []rune(args); len(r) > maxCallArgsLen {
+		args = string(r[:maxCallArgsLen]) + "…"
+	}
+	return fmt.Sprintf("⚙ %s(%s)", c.ToolName, args)
+}
+
+// resultText is the transcript text for a tool result; failures are labelled.
+func resultText(output string, isErr bool) string {
+	if isErr {
+		return "error: " + output
+	}
+	return output
 }
 
 // renderEntry renders one entry wrapped to width.
@@ -64,6 +87,8 @@ func renderEntry(e entry, width int) string {
 		return toolStyle.Width(width).Render(e.text)
 	case kindToolResult:
 		return toolStyle.Width(width).Render("↳ " + truncateLines(e.text, 8))
+	case kindApproval:
+		return approvalStyle.Width(width).Render("⚠ " + e.text)
 	default:
 		return errorStyle.Width(width).Render("✗ " + e.text)
 	}

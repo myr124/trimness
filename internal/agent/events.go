@@ -16,6 +16,15 @@ type MessageDone struct{ Msg core.Message }
 type ToolStarted struct{ Call core.ToolCall }
 type ToolFinished struct{ Result core.ToolResult }
 
+// ApprovalRequested asks the user whether a tool call may run. The agent is
+// blocked until a value is sent on Reply (true = allow) or the run is
+// cancelled. Reply is buffered, so answering never blocks.
+type ApprovalRequested struct {
+	Call    core.ToolCall
+	Summary string // human-readable description of what the call would do
+	Reply   chan<- bool
+}
+
 // RunError ends the run unsuccessfully. History is left consistent: any
 // partial assistant text is discarded.
 type RunError struct{ Err error }
@@ -23,9 +32,10 @@ type RunError struct{ Err error }
 // RunDone is always the last event unless RunError was sent.
 type RunDone struct{}
 
-func (TextDelta) isEvent()    {}
-func (MessageDone) isEvent()  {}
-func (ToolStarted) isEvent()  {}
-func (ToolFinished) isEvent() {}
-func (RunError) isEvent()     {}
-func (RunDone) isEvent()      {}
+func (TextDelta) isEvent()         {}
+func (MessageDone) isEvent()       {}
+func (ToolStarted) isEvent()       {}
+func (ToolFinished) isEvent()      {}
+func (ApprovalRequested) isEvent() {}
+func (RunError) isEvent()          {}
+func (RunDone) isEvent()           {}

@@ -12,8 +12,8 @@ type Usage struct {
 }
 
 type Request struct {
-	Messages        []core.Message  // for now we're gonna pass whole agent history of messages to each request to maintain context
-	ToolDefiniitons []core.ToolCall // list of tools that we are exposing to our assistant for this particular request
+	Messages []core.Message        // for now we're gonna pass whole agent history of messages to each request to maintain context
+	Tools    []core.ToolDefinition // tools we are exposing to the model for this particular request
 }
 
 type Response struct {
@@ -28,10 +28,12 @@ type Client interface {
 	) (Response, error)
 }
 
-// Chunk is one incremental piece of a streamed response.
+// Chunk is one incremental piece of a streamed response: text, tool calls, or
+// a terminal error.
 type Chunk struct {
-	Text string // text delta
-	Err  error  // terminal error; the stream ends after a chunk with Err set
+	Text      string          // text delta
+	ToolCalls []core.ToolCall // complete tool calls the model requested (IDs already assigned)
+	Err       error           // terminal error; the stream ends after a chunk with Err set
 }
 
 // Streamer is an optional capability a Client may implement. When it does, the
