@@ -30,6 +30,6 @@ func (m Model) statusLine() string {
 	default:
 		left = fmt.Sprintf("session %s", m.sess.Title)
 	}
-	hints := "esc cancel · ctrl+n new · ctrl+o sessions · ctrl+c quit"
+	hints := "esc cancel · pgup/pgdn scroll · ctrl+n new · ctrl+o sessions · ctrl+c quit"
 	return statusStyle.Render(left + "  |  " + hints)
 }

@@ -3,6 +3,7 @@ package tui
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"trimness/internal/agent"
@@ -211,5 +212,36 @@ func TestNewAndSwitchSession(t *testing.T) {
 	}
 	if len(m.agent.History) != 2 {
 		t.Fatalf("agent history not swapped: %d", len(m.agent.History))
+	}
+}
+
+func TestMouseWheelScrollsTranscript(t *testing.T) {
+	m, _ := newModel(t, &scriptedClient{})
+	for i := 0; i < 60; i++ {
+		m.entries = append(m.entries, entry{kindAssistant, fmt.Sprintf("line %d", i)})
+	}
+	m.refresh(true)
+	if !m.vp.AtBottom() {
+		t.Fatal("should start pinned to the bottom")
+	}
+
+	nm, _ := m.Update(tea.MouseMsg{Button: tea.MouseButtonWheelUp, Action: tea.MouseActionPress, Type: tea.MouseWheelUp})
+	m = nm.(Model)
+	if m.vp.AtBottom() {
+		t.Fatal("wheel up should scroll away from the bottom")
+	}
+
+	// New content arriving must not yank the view back down while scrolled up.
+	offset := m.vp.YOffset
+	m.entries = append(m.entries, entry{kindAssistant, "new"})
+	m.refresh(false)
+	if m.vp.YOffset != offset {
+		t.Fatalf("scroll position moved from %d to %d", offset, m.vp.YOffset)
+	}
+
+	nm, _ = m.Update(tea.MouseMsg{Button: tea.MouseButtonWheelDown, Action: tea.MouseActionPress, Type: tea.MouseWheelDown})
+	m = nm.(Model)
+	if m.vp.YOffset <= offset {
+		t.Fatal("wheel down should scroll toward the bottom")
 	}
 }

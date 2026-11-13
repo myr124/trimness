@@ -29,6 +29,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m.updateChat(msg)
 
+	case tea.MouseMsg:
+		// Mouse wheel scrolls the transcript. (The session picker has no use for it.)
+		if m.mode == modeChat {
+			var cmd tea.Cmd
+			m.vp, cmd = m.vp.Update(msg)
+			return m, cmd
+		}
+		return m, nil
+
 	case agentEventMsg:
 		return m.handleEvent(msg)
 

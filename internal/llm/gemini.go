@@ -62,3 +62,53 @@ func (gc GeminiClient) Generate(
 
 	return Response{Message: core.Message{Role: "assistant", Content: r.Text()}}, nil
 }
+
+// Compile-time check that GeminiClient supports streaming.
+var _ Streamer = GeminiClient{}
+
+// Stream sends the request and returns a channel of text deltas. The channel is
+// closed when the stream ends. A mid-stream failure arrives as a final Chunk
+// with Err set; failures before streaming starts are returned directly.
+func (gc GeminiClient) Stream(ctx context.Context, req Request) (<-chan Chunk, error) {
+	if len(req.Messages) == 0 {
+		return nil, fmt.Errorf("gemini: request has no messages")
+	}
+
+	client, err := genai.NewClient(ctx, &genai.ClientConfig{
+		APIKey:  gc.API_key,
+		Backend: genai.BackendGeminiAPI,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	out := make(chan Chunk)
+
+	go func() {
+		defer close(out) // closed channel = "stream finished" for the agent
+
+		// emit gives up if ctx is cancelled so we never block on a reader that left.
+		emit := func(c Chunk) bool {
+			select {
+			case out <- c:
+				return true
+			case <-ctx.Done():
+				return false
+			}
+		}
+
+		for r, err := range client.Models.GenerateContentStream(ctx, gc.Model, toContents(req.Messages), nil) {
+			if err != nil {
+				emit(Chunk{Err: err})
+				return
+			}
+			if text := r.Text(); text != "" {
+				if !emit(Chunk{Text: text}) {
+					return
+				}
+			}
+		}
+	}()
+
+	return out, nil
+}
